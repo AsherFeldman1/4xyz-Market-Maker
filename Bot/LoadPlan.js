@@ -43,6 +43,8 @@ const usdcAvailable = web3.utils.toBN(process.env.USDC_BALANCE_AVAILABLE).mul(_1
 
 const perpAvailable = web3.utils.toBN(process.env.PERP_BALANCE_AVAILABLE).mul(_10To18);
 
+const key = process.env.ORACLE_KEY;
+
 const inFilename = __dirname + '/../JsonStorage/GeneratedPlan.json';
 const outFilename = __dirname + '/../JsonStorage/LoadedPlan.json';
 
@@ -56,13 +58,12 @@ async function fileExists(filename) {
 }
 
 async function getPrice() {
-	return _10To18.mul(new BN(4));
 	let bestBid = await exchange.methods.getBuyHead(liquidityIndex);
 	let bid = new BN(bestBid.price);
 	let bestAsk = await exchange.methods.getSellHead(liquidityIndex);
 	let ask = new BN(bestAsk.Price);
 	if (ask == _0 || bid == _0) {
-		oracle.getPrice();
+		return (await oracle.methods.getPrice(key));
 	}
 	let dividend = ask.mul(bid);
 	let divisor = _2.mul(_10To18);
@@ -81,16 +82,16 @@ async function getPrice() {
 		if (mainAccount !== accounts[0]) {
 			throw new Error("Please Configure The .env file to ensure the first account provided is "+accounts[0]+" the current main account is "+mainAccount);
 		}
-		// // ----S-A-N-I-T-Y---C-H-E-C-K-S---- //
-		// if (await perp.methods.balanceOf(mainAccount) < perpAvailable) {
-		// 	throw new Error("Available perp balance set too high");
-		// }
+		// ----S-A-N-I-T-Y---C-H-E-C-K-S---- //
+		if (await perp.methods.balanceOf(mainAccount) < perpAvailable) {
+			throw new Error("Available perp balance set too high");
+		}
 
-		// if (await usdc.methods.balanceOf(mainAccount) < usdcAvailable) {
-		// 	throw new Error("Available usdc balance set too high");	
-		// }
+		if (await usdc.methods.balanceOf(mainAccount) < usdcAvailable) {
+			throw new Error("Available usdc balance set too high");	
+		}
 
-		// console.log("----S-A-N-I-T-Y---C-H-E-C-K-S---P-A-S-S-E-D----");
+		console.log("----S-A-N-I-T-Y---C-H-E-C-K-S---P-A-S-S-E-D----");
 
 	}
 	catch(err) {
@@ -186,11 +187,11 @@ async function getPrice() {
 			let amount = Div(totalOrderValue, orders[j].price);
 			orders[j].amount = amount;
 			orders[j].status = BUY_STATUS;
-			// let txn = exchange.methods.limitBuy(liquidityIndex, orders[j].price, amount, 0);
-			// let gas = await txn.estimateGas();
-			// let rec = await txn.send({from: accounts[0], gas});
-			// let eventVals = rec.events.limitBuy.returnValues;
-			// orders[j].ID = eventVals.newID;
+			let txn = exchange.methods.limitBuy(liquidityIndex, orders[j].price, amount, 0);
+			let gas = await txn.estimateGas();
+			let rec = await txn.send({from: accounts[0], gas});
+			let eventVals = rec.events.limitBuy.returnValues;
+			orders[j].ID = eventVals.newID;
 			console.log("ZONE[",i,"] Order[",j,"] ID:", orders[j].ID," Price:",orders[j].price.toString()," Amount:",amount.toString());
 		}
 	}
@@ -208,11 +209,11 @@ async function getPrice() {
 		for (let j = orders.length-1; j >= minIndex; j--) {
 			orders[j].amount = amount;
 			orders[j].status = SELL_STATUS;
-			// let txn = exchange.methods.limitSell(liquidityIndex, orders[j].price, amount, 0);
-			// let gas = await txn.estimateGas();
-			// let rec = await txn.send({from: accounts[0], gas});
-			// let eventVals = rec.events.limitSell.returnValues;
-			// orders[j].ID = eventVals.newID;
+			let txn = exchange.methods.limitSell(liquidityIndex, orders[j].price, amount, 0);
+			let gas = await txn.estimateGas();
+			let rec = await txn.send({from: accounts[0], gas});
+			let eventVals = rec.events.limitSell.returnValues;
+			orders[j].ID = eventVals.newID;
 			console.log("ZONE[",i,"] Order[",j,"] ID:", orders[j].ID," Price:",orders[j].price.toString()," Amount:",amount.toString());
 		}
 	}

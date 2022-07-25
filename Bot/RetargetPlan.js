@@ -43,6 +43,8 @@ const usdcAvailable = web3.utils.toBN(process.env.USDC_BALANCE_AVAILABLE).mul(_1
 
 const perpAvailable = web3.utils.toBN(process.env.PERP_BALANCE_AVAILABLE).mul(_10To18);
 
+const key = process.env.ORACLE_KEY;
+
 const inFilename = __dirname + '/../JsonStorage/LoadedPlan.json';
 const outFilename = inFilename;
 
@@ -56,13 +58,12 @@ async function fileExists(filename) {
 }
 
 async function getPrice() {
-  return _10To18.mul(new BN(3));
   let bestBid = await exchange.methods.getBuyHead(liquidityIndex);
   let bid = new BN(bestBid.price);
   let bestAsk = await exchange.methods.getSellHead(liquidityIndex);
   let ask = new BN(bestAsk.Price);
   if (ask == _0 || bid == _0) {
-    oracle.getPrice();
+    return (await oracle.methods.getPrice(key));
   }
   let dividend = ask.mul(bid);
   let divisor = _2.mul(_10To18);
@@ -204,30 +205,30 @@ let retarget = async () => {
       let oldOrder = zones0[i].orders[j];
       let newOrder = zones1[i].orders[j];
       if (oldOrder.status != newOrder.status && oldOrder.status != NULL_ORDER_STATUS) {
-        // let txn = oldOrder.status == BUY_STATUS ? exchange.methods.deleteBuy(oldOrder.ID) : exchange.methods.deleteSell(oldOrder.ID);
-        // let gas = await txn.estimateGas();
-        // await txn.send({from: accounts[0], gas});
+        let txn = oldOrder.status == BUY_STATUS ? exchange.methods.deleteBuy(oldOrder.ID) : exchange.methods.deleteSell(oldOrder.ID);
+        let gas = await txn.estimateGas();
+        await txn.send({from: accounts[0], gas});
         if (newOrder.status != NULL_ORDER_STATUS) {
-          // let txn1 = newOrder.status == BUY_STATUS ? 
-          // exchange.methods.limitBuy(liquidityIndex, newOrder.price, newOrder.amount, 0) :
-          // exchange.methods.limitSell(liquidityIndex, newOrder.price, newOrder.amount, 0);
-          // let gas = await txn1.estimateGas();
-          // let rec = await txn1.send({from: accounts[0], gas});
-          // let eventVals = newOrder.status == BUY_STATUS ? rec.events.limitBuy.returnValues : rec.events.limitSell.returnValues;
-          // newOrder.ID = eventVals.newID;
+          let txn1 = newOrder.status == BUY_STATUS ? 
+          exchange.methods.limitBuy(liquidityIndex, newOrder.price, newOrder.amount, 0) :
+          exchange.methods.limitSell(liquidityIndex, newOrder.price, newOrder.amount, 0);
+          let gas = await txn1.estimateGas();
+          let rec = await txn1.send({from: accounts[0], gas});
+          let eventVals = newOrder.status == BUY_STATUS ? rec.events.limitBuy.returnValues : rec.events.limitSell.returnValues;
+          newOrder.ID = eventVals.newID;
         }
       } else if (oldOrder.status != newOrder.status) {
-          // let txn = newOrder.status == BUY_STATUS ? 
-          // exchange.methods.limitBuy(liquidityIndex, newOrder.price, newOrder.amount, 0) :
-          // exchange.methods.limitSell(liquidityIndex, newOrder.price, newOrder.amount, 0);
-          // let gas = await txn.estimateGas();
-          // let rec = await txn.send({from: accounts[0], gas});
-          // let eventVals = newOrder.status == BUY_STATUS ? rec.events.limitBuy.returnValues : rec.events.limitSell.returnValues;
-          // newOrder.ID = eventVals.newID;
+          let txn = newOrder.status == BUY_STATUS ? 
+          exchange.methods.limitBuy(liquidityIndex, newOrder.price, newOrder.amount, 0) :
+          exchange.methods.limitSell(liquidityIndex, newOrder.price, newOrder.amount, 0);
+          let gas = await txn.estimateGas();
+          let rec = await txn.send({from: accounts[0], gas});
+          let eventVals = newOrder.status == BUY_STATUS ? rec.events.limitBuy.returnValues : rec.events.limitSell.returnValues;
+          newOrder.ID = eventVals.newID;
       } else if (oldOrder.amount != newOrder.amount && (oldOrder.status != NULL_ORDER_STATUS || newOrder.status != NULL_ORDER_STATUS)) {
-          // let txn = oldOrder.status == BUY_STATUS ? exchange.methods.modifyBuy(oldOrder.ID, newOrder.amount) : exchange.methods.modifySell(oldOrder.ID, newOrder.amount);
-          // let gas = await txn.estimateGas();
-          // await txn.send({from: accounts[0], gas});
+          let txn = oldOrder.status == BUY_STATUS ? exchange.methods.modifyBuy(oldOrder.ID, newOrder.amount) : exchange.methods.modifySell(oldOrder.ID, newOrder.amount);
+          let gas = await txn.estimateGas();
+          await txn.send({from: accounts[0], gas});
       }
     }
   }
