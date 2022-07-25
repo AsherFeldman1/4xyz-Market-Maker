@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 
 const IOrderbookExchangeABI = require(__dirname + '/../Interface/IOrderBook.json');
 const IERC20 = require(__dirname + '/../Interface/IERC20Upgradeable.json');
+const IOracle = require(__dirname + '/../Interface/IPriceFeed.json');
 
 dotenv.config();
 
@@ -28,12 +29,15 @@ const SELL_STATUS = 'LimitSell';
 const OrderbookAddress = process.env.ORDERBOOK_ADDRESS;
 const PerpAddress = process.env.PERP_ADDRESS;
 const USDCAddress = process.env.USDC_ADDRESS;
+const OracleAddress = process.env.ORACLE_ADDRESS;
 
 const exchange = new web3.eth.Contract(IOrderbookExchangeABI.abi, OrderbookAddress);
 
 const perp = new web3.eth.Contract(IERC20.abi, PerpAddress);
 
 const usdc = new web3.eth.Contract(IERC20.abi, USDCAddress);
+
+const oracle = new web3.eth.Contract(IOracle.abi, OracleAddress);
 
 const liquidityIndex = process.env.LIQUIDITY_INDEX;
 
